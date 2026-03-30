@@ -38,7 +38,7 @@ builder.Services.AddAuthentication(options =>
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddScoped<BookingTravel.Application.Interfaces.IAuthService, BookingTravel.Application.Services.AuthService>();
+builder.Services.AddScoped<BookingTravel.Application.Interfaces.IAuthService, BookingTravel.Infrastructure.Services.AuthService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

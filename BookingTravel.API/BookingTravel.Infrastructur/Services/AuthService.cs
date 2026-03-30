@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-namespace BookingTravel.Application.Services
+namespace BookingTravel.Infrastructure.Services
 {
     public class AuthService : IAuthService
     {
