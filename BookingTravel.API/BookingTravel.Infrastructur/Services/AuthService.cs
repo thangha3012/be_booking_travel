@@ -18,11 +18,69 @@ namespace BookingTravel.Infrastructure.Services
     {
         private readonly BookingTravelDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
 
-        public AuthService(BookingTravelDbContext context, IConfiguration configuration)
+        public AuthService(BookingTravelDbContext context, IConfiguration configuration, IEmailService emailService)
         {
             _context = context;
             _configuration = configuration;
+            _emailService = emailService;
+        }
+
+        public async Task<bool> ForgotPasswordAsync(ForgotPasswordRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null)
+            {
+                // Báo lỗi trực tiếp cho người dùng biết email nhập sai
+                throw new Exception("Email không tồn tại trong hệ thống. Vui lòng kiểm tra lại.");
+            }
+
+            // Sinh mã ngẫu nhiên 6 số
+            string resetToken = new Random().Next(100000, 999999).ToString();
+            user.ResetPasswordToken = resetToken;
+            user.ResetPasswordExpiry = DateTime.UtcNow.AddMinutes(15);
+            
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            // Gửi qua Email Service
+            await _emailService.SendEmailAsync(
+                request.Email, 
+                "MÃ XÁC NHẬN OTP - ĐẶT LẠI MẬT KHẨU", 
+                $"Xin chào {user.FullName},\n\nMã OTP xác nhận đặt lại mật khẩu của bạn là: {resetToken}\nMã OTP này có hiệu lực trong vòng 15 phút.\nNếu bạn không yêu cầu, vui lòng bỏ qua email này.");
+
+            return true;
+        }
+
+        public async Task<bool> VerifyOtpAsync(VerifyOtpRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null || user.ResetPasswordToken != request.Token || user.ResetPasswordExpiry < DateTime.UtcNow)
+            {
+                throw new Exception("Mã OTP không hợp lệ hoặc đã hết hạn.");
+            }
+
+            // OTP đúng, cho phép tiếp tục đổi mật khẩu.
+            return true;
+        }
+
+        public async Task<bool> ResetPasswordAsync(ResetPasswordRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null || user.ResetPasswordToken != request.Token || user.ResetPasswordExpiry < DateTime.UtcNow)
+            {
+                throw new Exception("Mã xác nhận không hợp lệ hoặc đã hết hạn.");
+            }
+
+            user.PasswordHash = PasswordHelper.HashPassword(request.NewPassword);
+            user.ResetPasswordToken = null;
+            user.ResetPasswordExpiry = null;
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return true;
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)

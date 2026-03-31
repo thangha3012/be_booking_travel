@@ -23,4 +23,22 @@ namespace BookingTravel.Application.DTOs.Auth
         public string Email { get; set; } = string.Empty;
         public int RoleId { get; set; }
     }
+
+    public class ForgotPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class VerifyOtpRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
 }

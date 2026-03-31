@@ -38,7 +38,14 @@ builder.Services.AddAuthentication(options =>
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Đăng ký Dependency Injection
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.IAuthService, BookingTravel.Infrastructure.Services.AuthService>();
+builder.Services.AddScoped(typeof(BookingTravel.Application.Interfaces.IRepository<>), typeof(BookingTravel.Infrastructure.Repositories.Repository<>));
+builder.Services.AddScoped<BookingTravel.Application.Interfaces.IUnitOfWork, BookingTravel.Infrastructure.Repositories.UnitOfWork>();
+builder.Services.AddScoped<BookingTravel.Application.Interfaces.ICategoryService, BookingTravel.Application.Services.CategoryService>();
+builder.Services.AddScoped<BookingTravel.Application.Interfaces.IDestinationService, BookingTravel.Application.Services.DestinationService>();
+builder.Services.AddScoped<BookingTravel.Application.Interfaces.IEmailService, BookingTravel.Infrastructure.Services.EmailService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

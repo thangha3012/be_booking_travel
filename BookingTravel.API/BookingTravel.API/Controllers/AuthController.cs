@@ -44,5 +44,47 @@ namespace BookingTravel.API.Controllers
                 return Unauthorized(new { message = ex.Message });
             }
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            try
+            {
+                await _authService.ForgotPasswordAsync(request);
+                return Ok(new { message = "Mã OTP đã được gửi vào hòm thư của bạn!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
+        {
+            try
+            {
+                await _authService.VerifyOtpAsync(request);
+                return Ok(new { message = "Mã OTP hợp lệ. Bây giờ bạn có thể tiến hành đặt lại mật khẩu." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            try
+            {
+                await _authService.ResetPasswordAsync(request);
+                return Ok(new { message = "Đặt lại mật khẩu thành công! Hãy đăng nhập bằng mật khẩu mới." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

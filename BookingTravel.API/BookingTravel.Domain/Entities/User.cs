@@ -15,6 +15,9 @@ namespace BookingTravel.Domain.Entities
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
 
+        public string? ResetPasswordToken { get; set; }
+        public DateTime? ResetPasswordExpiry { get; set; }
+
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
