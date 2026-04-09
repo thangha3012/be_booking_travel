@@ -8,5 +8,7 @@ namespace BookingTravel.Application.Interfaces
     {
         Task<IReadOnlyList<CategoryDto>> GetAllCategoriesAsync();
         Task<CategoryDto> CreateCategoryAsync(CreateCategoryRequest request);
+        Task<bool> UpdateCategoryAsync(int id, UpdateCategoryRequest request);
+        Task<bool> DeleteCategoryAsync(int id);
     }
 }

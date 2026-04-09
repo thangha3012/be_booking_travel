@@ -36,6 +36,23 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Cấu hình CORS — cho phép Frontend Vue gọi API
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:5173",  // Vite dev server mặc định
+                "http://localhost:5174",  // Vite fallback port
+                "http://localhost:3000"   // Dự phòng
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
 // Add services to the container.
 builder.Services.AddControllers();
 
@@ -45,8 +62,11 @@ builder.Services.AddScoped(typeof(BookingTravel.Application.Interfaces.IReposito
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.IUnitOfWork, BookingTravel.Infrastructure.Repositories.UnitOfWork>();
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.ICategoryService, BookingTravel.Application.Services.CategoryService>();
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.IDestinationService, BookingTravel.Application.Services.DestinationService>();
+builder.Services.AddScoped<BookingTravel.Application.Interfaces.ITourService, BookingTravel.Infrastructure.Services.TourService>();
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.IEmailService, BookingTravel.Infrastructure.Services.EmailService>();
-
+builder.Services.AddScoped<BookingTravel.Application.Interfaces.IBookingService, BookingTravel.Infrastructure.Services.BookingService>();
+builder.Services.AddScoped<BookingTravel.Application.Interfaces.IUserService, BookingTravel.Infrastructure.Services.UserService>();
+builder.Services.AddHostedService<BookingTravel.Infrastructure.Workers.BookingCleanupService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -86,11 +106,35 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowFrontend");
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Seed Admin User Data tự động
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<BookingTravel.Infrastructure.Data.BookingTravelDbContext>();
+    
+    // Đảm bảo không tạo trùng lặp admin
+    if (!context.Users.Any(u => u.Role == BookingTravel.Domain.Enums.Role.Admin))
+    {
+        var adminUser = new BookingTravel.Domain.Entities.User
+        {
+            FullName = "Administrator (BacViet)",
+            Email = "admin04@bacviet.com",
+            Phone = "0999999999",
+            PasswordHash = BookingTravel.Application.Helpers.PasswordHelper.HashPassword("Admin@123"),
+            Role = BookingTravel.Domain.Enums.Role.Admin,
+            IsActive = true
+        };
+        context.Users.Add(adminUser);
+        context.SaveChanges();
+    }
+}
 
 app.Run();

@@ -60,5 +60,32 @@ namespace BookingTravel.Application.Services
                 IsActive = category.IsActive
             };
         }
+
+        public async Task<bool> UpdateCategoryAsync(int id, UpdateCategoryRequest request)
+        {
+            var category = await _categoryRepository.GetByIdAsync(id);
+            if (category == null) return false;
+
+            category.Name = request.Name;
+            category.Slug = request.Name.ToLower().Replace(" ", "-");
+            category.Description = request.Description;
+            category.ParentId = request.ParentId;
+            category.DisplayOrder = request.DisplayOrder;
+            category.IsActive = request.IsActive;
+
+            _categoryRepository.Update(category);
+            var result = await _unitOfWork.CompleteAsync();
+            return result > 0;
+        }
+
+        public async Task<bool> DeleteCategoryAsync(int id)
+        {
+            var category = await _categoryRepository.GetByIdAsync(id);
+            if (category == null) return false;
+
+            _categoryRepository.Delete(category);
+            var result = await _unitOfWork.CompleteAsync();
+            return result > 0;
+        }
     }
 }

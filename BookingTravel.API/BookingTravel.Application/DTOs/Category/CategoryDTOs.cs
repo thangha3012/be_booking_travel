@@ -21,4 +21,13 @@ namespace BookingTravel.Application.DTOs.Category
         public string? Description { get; set; }
         public int DisplayOrder { get; set; }
     }
+
+    public class UpdateCategoryRequest
+    {
+        public int? ParentId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int DisplayOrder { get; set; }
+        public bool IsActive { get; set; }
+    }
 }

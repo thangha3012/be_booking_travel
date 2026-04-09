@@ -1,0 +1,3 @@
+namespace BookingTravel.Application.Services
+{
+}
