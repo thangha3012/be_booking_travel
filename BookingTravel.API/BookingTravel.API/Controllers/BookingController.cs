@@ -61,6 +61,29 @@ namespace BookingTravel.API.Controllers
             }
         }
 
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<IActionResult> GetBookingById(int id)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return ErrorResult("Thông tin đăng nhập không hợp lệ.", 401);
+                }
+
+                var booking = await _bookingService.GetBookingByIdAsync(id, userId);
+                if (booking == null) return ErrorResult("Không tìm thấy đơn hàng.", 404);
+
+                return SuccessResult(booking, "Lấy chi tiết đơn hàng thành công.");
+            }
+            catch (Exception ex)
+            {
+                return ErrorResult(ex.Message, 400);
+            }
+        }
+
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllBookings()
@@ -84,6 +107,29 @@ namespace BookingTravel.API.Controllers
                 var success = await _bookingService.UpdateBookingStatusAsync(id, request.Status);
                 if (!success) return ErrorResult("Không tìm thấy đơn hàng cần cập nhật.", 404);
                 return SuccessResult(null, "Cập nhật trạng thái thành công.");
+            }
+            catch (Exception ex)
+            {
+                return ErrorResult(ex.Message, 400);
+            }
+        }
+
+        [HttpPut("{id}/cancel")]
+        [Authorize]
+        public async Task<IActionResult> CancelBooking(int id)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return ErrorResult("Thông tin đăng nhập không hợp lệ.", 401);
+                }
+
+                var success = await _bookingService.CancelBookingAsync(userId, id);
+                if (!success) return ErrorResult("Không tìm thấy đơn hàng của bạn.", 404);
+
+                return SuccessResult(null, "Đã hủy đơn hàng thành công.");
             }
             catch (Exception ex)
             {

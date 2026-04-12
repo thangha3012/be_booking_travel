@@ -7,7 +7,7 @@ namespace BookingTravel.Application.Interfaces
     public interface ITourService
     {
         // Quản lý Tour cơ bản
-        Task<IReadOnlyList<TourDto>> GetAllToursAsync();
+        Task<IReadOnlyList<TourDto>> GetAllToursAsync(string? keyword = null, int? categoryId = null, int? destinationId = null);
         Task<TourDto?> GetTourByIdAsync(int id);
         Task<TourDto> CreateTourAsync(CreateTourRequest request);
         Task<bool> UpdateTourAsync(int id, UpdateTourRequest request);

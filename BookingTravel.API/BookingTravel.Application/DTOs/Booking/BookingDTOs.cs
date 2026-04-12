@@ -26,7 +26,7 @@ namespace BookingTravel.Application.DTOs.Booking
         public string? Notes { get; set; }
 
         // RowVersion từ Lịch trình truyền xuống để bắt ngoại lệ Concurrency
-        public byte[] ScheduleRowVersion { get; set; } = Array.Empty<byte>();
+        public byte[]? ScheduleRowVersion { get; set; }
 
         // Danh sách khách đi tour
         public List<PassengerDto> Passengers { get; set; } = new List<PassengerDto>();

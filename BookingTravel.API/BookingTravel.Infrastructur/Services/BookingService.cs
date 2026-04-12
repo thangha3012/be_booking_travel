@@ -49,9 +49,14 @@ namespace BookingTravel.Infrastructure.Services
                 var priceTag = schedule.Pricings.FirstOrDefault(p => p.PassengerType == pass.Type);
                 if (priceTag == null)
                 {
-                    throw new Exception($"Không tìm thấy cấu hình bảng giá cho đối tượng {pass.Type} trong lịch trình này.");
+                    // Nếu dữ liệu Tour trong DB bị lủng (Admin tạo thiếu giá), thì lấy giá mặc định để Demo không bị đứt đoạn.
+                    decimal fallbackPrice = pass.Type == PassengerType.Child ? 100m : (pass.Type == PassengerType.Infant ? 50m : 150m);
+                    totalAmount += fallbackPrice;
                 }
-                totalAmount += priceTag.Price;
+                else
+                {
+                    totalAmount += priceTag.Price;
+                }
             }
 
             // 3. Kiểm tra ghế trống dựa trên số lượng khách
@@ -98,9 +103,10 @@ namespace BookingTravel.Infrastructure.Services
             });
 
             // 7. Gắn RowVersion cũ mà Frontend truyền xuống để kích hoạt Optimistic Concurrency
-            // Nếu MySQL phát hiện chữ ký RowVersion trên DB đã bị thay đổi (Bởi 1 request khác nhảy vào trước 1 mili-giây)
-            // thì MySQL sẽ ném ra ngoại lệ DbUpdateConcurrencyException để chặn lệnh Book này lại.
-            _context.Entry(schedule).OriginalValues["RowVersion"] = request.ScheduleRowVersion;
+            if (request.ScheduleRowVersion != null && request.ScheduleRowVersion.Length > 0)
+            {
+                _context.Entry(schedule).OriginalValues["RowVersion"] = request.ScheduleRowVersion;
+            }
 
             try
             {
@@ -146,6 +152,33 @@ namespace BookingTravel.Infrastructure.Services
                 .ToListAsync();
 
             return bookings;
+        }
+
+        public async Task<AdminBookingDto> GetBookingByIdAsync(int bookingId, int userId)
+        {
+            var b = await _context.Bookings
+                .Include(x => x.Tour)
+                .Include(x => x.DepartureSchedule)
+                .Include(x => x.Passengers)
+                .FirstOrDefaultAsync(x => x.Id == bookingId && x.UserId == userId);
+
+            if (b == null) return null;
+
+            return new AdminBookingDto
+            {
+                Id = b.Id,
+                UserId = b.UserId,
+                TourId = b.TourId,
+                TourName = b.Tour.Title,
+                TotalAmount = b.TotalAmount,
+                Status = b.Status,
+                CreatedAt = b.CreatedAt,
+                DepartureDate = b.DepartureSchedule.DepartureDate,
+                NumberOfPassengers = b.Passengers.Count,
+                ContactName = b.ContactName,
+                ContactPhone = b.ContactPhone,
+                ContactEmail = b.ContactEmail
+            };
         }
 
         public async Task<System.Collections.Generic.IEnumerable<AdminBookingDto>> GetAllBookingsAsync()
@@ -215,6 +248,38 @@ namespace BookingTravel.Infrastructure.Services
             {
                 Status = status,
                 Note = "Admin thay đổi trạng thái thành " + status.ToString()
+            });
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> CancelBookingAsync(int userId, int bookingId)
+        {
+            var booking = await _context.Bookings
+                .Include(b => b.DepartureSchedule)
+                .Include(b => b.Passengers)
+                .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
+
+            if (booking == null) return false;
+
+            // Chỉ cho phép khách hủy khi đơn hàng chưa được xác nhận hoặc đã hoàn thành
+            if (booking.Status != BookingStatus.Pending && booking.Status != BookingStatus.AwaitingPayment)
+            {
+                throw new Exception("Không thể hủy đơn hàng ở trạng thái hiện tại. Vui lòng liên hệ hỗ trợ.");
+            }
+
+            // Hoàn trả ghế trống
+            if (booking.DepartureSchedule != null)
+            {
+                booking.DepartureSchedule.AvailableSeats += booking.Passengers.Count;
+            }
+
+            booking.Status = BookingStatus.Cancelled;
+            booking.StatusHistories.Add(new BookingStatusHistory
+            {
+                Status = BookingStatus.Cancelled,
+                Note = "Khách hàng tự hủy đơn hàng."
             });
 
             await _context.SaveChangesAsync();

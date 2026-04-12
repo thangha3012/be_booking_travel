@@ -25,12 +25,34 @@ namespace BookingTravel.Infrastructure.Services
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IReadOnlyList<TourDto>> GetAllToursAsync()
+        public async Task<IReadOnlyList<TourDto>> GetAllToursAsync(string? keyword = null, int? categoryId = null, int? destinationId = null)
         {
-            var tours = await _context.Tours
+            var query = _context.Tours
                 .Include(t => t.Category)
                 .Include(t => t.Destination)
-                .ToListAsync();
+                .Include(t => t.DepartureSchedules) // Include schedules to find min price eventually maybe
+                .AsQueryable();
+
+            // Chỉ lấy các tour đã xuất bản (Published) cho phía khách hàng
+            // Lưu ý: Nếu Admin gọi hàm này có thể cần logic khác, nhưng hiện tại Admin dùng Dashboard/AdminToursView riêng biệt
+            query = query.Where(t => t.Status == TourStatus.Published);
+
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                query = query.Where(t => t.Title.Contains(keyword) || (t.Description != null && t.Description.Contains(keyword)));
+            }
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(t => t.CategoryId == categoryId.Value);
+            }
+
+            if (destinationId.HasValue)
+            {
+                query = query.Where(t => t.DestinationId == destinationId.Value);
+            }
+
+            var tours = await query.ToListAsync();
 
             return tours.Select(MapToTourDto).ToList();
         }
@@ -173,7 +195,8 @@ namespace BookingTravel.Infrastructure.Services
                 Highlights = tour.Highlights,
                 Itinerary = tour.Itinerary,
                 Policies = tour.Policies,
-                Status = tour.Status
+                Status = tour.Status,
+                ImageUrl = _context.MediaItems.FirstOrDefault(m => m.RefId == tour.Id && m.RefType == "Tour")?.Url
             };
 
             if (tour.DepartureSchedules != null && tour.DepartureSchedules.Any())

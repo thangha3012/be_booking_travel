@@ -20,6 +20,7 @@ namespace BookingTravel.Application.DTOs.Tours
         public string? Itinerary { get; set; }
         public string? Policies { get; set; }
         public TourStatus Status { get; set; }
+        public string? ImageUrl { get; set; }
 
         public List<DepartureScheduleDto> Schedules { get; set; } = new();
     }
@@ -32,6 +33,7 @@ namespace BookingTravel.Application.DTOs.Tours
         public int TotalSeats { get; set; }
         public int AvailableSeats { get; set; }
         public bool IsActive { get; set; }
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
         public List<TourPricingDto> Pricings { get; set; } = new();
     }
 
