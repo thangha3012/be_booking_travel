@@ -4,6 +4,7 @@ using BookingTravel.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookingTravel.Infrastructure.Migrations
 {
     [DbContext(typeof(BookingTravelDbContext))]
-    partial class BookingTravelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260418105851_AddDepartureAndTransportToTour")]
+    partial class AddDepartureAndTransportToTour
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -415,9 +418,6 @@ namespace BookingTravel.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal?>("BasePrice")
-                        .HasColumnType("decimal(65,30)");
-
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
@@ -433,9 +433,6 @@ namespace BookingTravel.Infrastructure.Migrations
                     b.Property<int>("DestinationId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Duration")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("Highlights")
                         .HasColumnType("longtext");
 
@@ -444,9 +441,6 @@ namespace BookingTravel.Infrastructure.Migrations
 
                     b.Property<string>("Policies")
                         .HasColumnType("longtext");
-
-                    b.Property<double>("Rating")
-                        .HasColumnType("double");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -457,9 +451,6 @@ namespace BookingTravel.Infrastructure.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("TourCode")
                         .HasColumnType("longtext");
 
                     b.Property<string>("Transport")

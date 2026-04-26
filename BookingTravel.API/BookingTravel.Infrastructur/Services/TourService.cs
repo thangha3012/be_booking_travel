@@ -25,21 +25,33 @@ namespace BookingTravel.Infrastructure.Services
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IReadOnlyList<TourDto>> GetAllToursAsync(string? keyword = null, int? categoryId = null, int? destinationId = null)
+        public async Task<PagedResult<TourDto>> GetAllToursAsync(
+            string? keyword = null, 
+            int? categoryId = null, 
+            int? destinationId = null,
+            int page = 1,
+            int pageSize = 10,
+            string? sortBy = null,
+            decimal? minPrice = null,
+            decimal? maxPrice = null,
+            int? status = null)
         {
             var query = _context.Tours
                 .Include(t => t.Category)
                 .Include(t => t.Destination)
-                .Include(t => t.DepartureSchedules) // Include schedules to find min price eventually maybe
+                .Include(t => t.DepartureSchedules) 
+                    .ThenInclude(ds => ds.Pricings)
                 .AsQueryable();
 
-            // Chỉ lấy các tour đã xuất bản (Published) cho phía khách hàng
-            // Lưu ý: Nếu Admin gọi hàm này có thể cần logic khác, nhưng hiện tại Admin dùng Dashboard/AdminToursView riêng biệt
-            query = query.Where(t => t.Status == TourStatus.Published);
+            if (status.HasValue)
+            {
+                query = query.Where(t => (int)t.Status == status.Value);
+            }
 
             if (!string.IsNullOrEmpty(keyword))
             {
-                query = query.Where(t => t.Title.Contains(keyword) || (t.Description != null && t.Description.Contains(keyword)));
+                var lowerKeyword = keyword.ToLower();
+                query = query.Where(t => t.Title.ToLower().Contains(lowerKeyword) || (t.Description != null && t.Description.ToLower().Contains(lowerKeyword)));
             }
 
             if (categoryId.HasValue)
@@ -52,9 +64,57 @@ namespace BookingTravel.Infrastructure.Services
                 query = query.Where(t => t.DestinationId == destinationId.Value);
             }
 
-            var tours = await query.ToListAsync();
+            // Lọc theo khoảng giá tối thiểu từ lịch trình
+            if (minPrice.HasValue)
+            {
+                query = query.Where(t => t.DepartureSchedules.Any(ds => ds.Pricings.Any(p => p.Price >= minPrice.Value)));
+            }
 
-            return tours.Select(MapToTourDto).ToList();
+            if (maxPrice.HasValue)
+            {
+                query = query.Where(t => t.DepartureSchedules.Any(ds => ds.Pricings.Any(p => p.Price <= maxPrice.Value)));
+            }
+
+            // Đếm tổng số lượng cho chức năng phân trang
+            var totalCount = await query.CountAsync();
+
+            // Sắp xếp
+            if (!string.IsNullOrEmpty(sortBy))
+            {
+                switch (sortBy.ToLower())
+                {
+                    case "price_asc":
+                        query = query.OrderBy(t => t.DepartureSchedules.SelectMany(ds => ds.Pricings).Min(p => (decimal?)p.Price) ?? decimal.MaxValue);
+                        break;
+                    case "price_desc":
+                        query = query.OrderByDescending(t => t.DepartureSchedules.SelectMany(ds => ds.Pricings).Min(p => (decimal?)p.Price) ?? 0);
+                        break;
+                    case "latest":
+                    default:
+                        query = query.OrderByDescending(t => t.CreatedAt);
+                        break;
+                }
+            }
+            else
+            {
+                query = query.OrderByDescending(t => t.CreatedAt);
+            }
+
+            // Phân trang
+            var tours = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = tours.Select(MapToTourDto).ToList();
+
+            return new PagedResult<TourDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
 
         public async Task<TourDto?> GetTourByIdAsync(int id)
@@ -83,6 +143,11 @@ namespace BookingTravel.Infrastructure.Services
                 Highlights = request.Highlights,
                 Itinerary = request.Itinerary,
                 Policies = request.Policies,
+                TourCode = request.TourCode,
+                Duration = request.Duration,
+                BasePrice = request.BasePrice,
+                DepartureLocation = request.DepartureLocation,
+                Transport = request.Transport,
                 Status = TourStatus.Draft
             };
 
@@ -105,6 +170,11 @@ namespace BookingTravel.Infrastructure.Services
             tour.Highlights = request.Highlights;
             tour.Itinerary = request.Itinerary;
             tour.Policies = request.Policies;
+            tour.TourCode = request.TourCode;
+            tour.Duration = request.Duration;
+            tour.BasePrice = request.BasePrice;
+            tour.DepartureLocation = request.DepartureLocation;
+            tour.Transport = request.Transport;
             tour.Status = request.Status;
 
             _context.Tours.Update(tour);
@@ -195,7 +265,13 @@ namespace BookingTravel.Infrastructure.Services
                 Highlights = tour.Highlights,
                 Itinerary = tour.Itinerary,
                 Policies = tour.Policies,
+                TourCode = tour.TourCode,
+                Duration = tour.Duration,
+                BasePrice = tour.BasePrice,
+                DepartureLocation = tour.DepartureLocation,
+                Transport = tour.Transport,
                 Status = tour.Status,
+                Rating = tour.Rating,
                 ImageUrl = _context.MediaItems.FirstOrDefault(m => m.RefId == tour.Id && m.RefType == "Tour")?.Url
             };
 

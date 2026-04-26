@@ -19,10 +19,19 @@ namespace BookingTravel.API.Controllers
 
         // Khách hàng vãng lai có thể xem danh sách Tour thoải mái
         [HttpGet]
-        public async Task<IActionResult> GetAllTours([FromQuery] string? keyword = null, [FromQuery] int? categoryId = null, [FromQuery] int? destinationId = null)
+        public async Task<IActionResult> GetAllTours(
+            [FromQuery] string? keyword = null, 
+            [FromQuery] int? categoryId = null, 
+            [FromQuery] int? destinationId = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? sortBy = null,
+            [FromQuery] decimal? minPrice = null,
+            [FromQuery] decimal? maxPrice = null,
+            [FromQuery] int? status = null)
         {
-            var tours = await _tourService.GetAllToursAsync(keyword, categoryId, destinationId);
-            return SuccessResult(tours, "Lấy danh sách Tour thành công.");
+            var pagedResult = await _tourService.GetAllToursAsync(keyword, categoryId, destinationId, page, pageSize, sortBy, minPrice, maxPrice, status);
+            return SuccessResult(pagedResult, "Lấy danh sách Tour thành công.");
         }
 
         // Khách lúc bấm vào Chi tiết 1 Tour

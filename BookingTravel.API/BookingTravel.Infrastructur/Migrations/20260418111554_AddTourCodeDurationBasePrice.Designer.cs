@@ -4,6 +4,7 @@ using BookingTravel.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookingTravel.Infrastructure.Migrations
 {
     [DbContext(typeof(BookingTravelDbContext))]
-    partial class BookingTravelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260418111554_AddTourCodeDurationBasePrice")]
+    partial class AddTourCodeDurationBasePrice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -444,9 +447,6 @@ namespace BookingTravel.Infrastructure.Migrations
 
                     b.Property<string>("Policies")
                         .HasColumnType("longtext");
-
-                    b.Property<double>("Rating")
-                        .HasColumnType("double");
 
                     b.Property<string>("Slug")
                         .IsRequired()

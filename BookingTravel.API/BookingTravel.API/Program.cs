@@ -54,7 +54,10 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 // Đăng ký Dependency Injection
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.IAuthService, BookingTravel.Infrastructure.Services.AuthService>();
@@ -66,7 +69,9 @@ builder.Services.AddScoped<BookingTravel.Application.Interfaces.ITourService, Bo
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.IEmailService, BookingTravel.Infrastructure.Services.EmailService>();
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.IBookingService, BookingTravel.Infrastructure.Services.BookingService>();
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.IUserService, BookingTravel.Infrastructure.Services.UserService>();
-builder.Services.AddHostedService<BookingTravel.Infrastructure.Workers.BookingCleanupService>();
+builder.Services.AddScoped<BookingTravel.Application.Interfaces.IReviewService, BookingTravel.Infrastructure.Services.ReviewService>();
+builder.Services.AddScoped<BookingTravel.Application.Interfaces.IChatService, BookingTravel.Infrastructure.Services.ChatService>();
+builder.Services.AddHttpClient();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

@@ -19,8 +19,14 @@ namespace BookingTravel.Application.DTOs.Tours
         public string? Highlights { get; set; }
         public string? Itinerary { get; set; }
         public string? Policies { get; set; }
+        public string? TourCode { get; set; }
+        public string? Duration { get; set; }
+        public decimal? BasePrice { get; set; }
+        public string? DepartureLocation { get; set; }
+        public string? Transport { get; set; }
         public TourStatus Status { get; set; }
         public string? ImageUrl { get; set; }
+        public double Rating { get; set; }
 
         public List<DepartureScheduleDto> Schedules { get; set; } = new();
     }
@@ -54,6 +60,11 @@ namespace BookingTravel.Application.DTOs.Tours
         public string? Highlights { get; set; }
         public string? Itinerary { get; set; }
         public string? Policies { get; set; }
+        public string? TourCode { get; set; }
+        public string? Duration { get; set; }
+        public decimal? BasePrice { get; set; }
+        public string? DepartureLocation { get; set; }
+        public string? Transport { get; set; }
     }
 
     public class UpdateTourRequest : CreateTourRequest
@@ -67,5 +78,14 @@ namespace BookingTravel.Application.DTOs.Tours
         public DateTime ReturnDate { get; set; }
         public int TotalSeats { get; set; }
         public List<TourPricingDto> Pricings { get; set; } = new();
+    }
+
+    public class PagedResult<T>
+    {
+        public List<T> Items { get; set; } = new();
+        public int TotalCount { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
     }
 }
