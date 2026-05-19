@@ -10,6 +10,7 @@ namespace BookingTravel.Application.Interfaces
         Task<IReadOnlyList<Review>> GetByTourIdAsync(int tourId);
         Task<IReadOnlyList<Review>> GetAllReviewsForAdminAsync();
         Task<Review?> GetByIdAsync(int id);
+        Task<IReadOnlyList<Review>> GetLatestReviewsAsync(int count);
         Task<Review> CreateReviewAsync(int userId, int tourId, int bookingId, int rating, string? title, string? content);
         Task UpdateReviewStatusAsync(int id, ReviewStatus status);
         Task DeleteReviewAsync(int id);

@@ -19,6 +19,7 @@ namespace BookingTravel.Infrastructure.Services
             _context = context;
         }
 
+        // Lấy danh sách toàn bộ người dùng trong hệ thống (Quyền Admin)
         public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
         {
             return await _context.Users
@@ -35,6 +36,7 @@ namespace BookingTravel.Infrastructure.Services
                 .ToListAsync();
         }
 
+        // Kích hoạt hoặc Khóa tài khoản người dùng
         public async Task<bool> ToggleUserStatusAsync(int id)
         {
             var user = await _context.Users.FindAsync(id);

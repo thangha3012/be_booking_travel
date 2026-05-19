@@ -17,6 +17,7 @@ namespace BookingTravel.API.Controllers
             _userService = userService;
         }
 
+        // Quản lý danh sách người dùng (Quyền Admin)
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllUsers()
@@ -25,6 +26,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(users, "Lấy danh sách người dùng thành công.");
         }
 
+        // Khóa hoặc mở khóa tài khoản người dùng (Quyền Admin)
         [HttpPut("{id}/toggle-status")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ToggleUserStatus(int id)

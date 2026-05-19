@@ -54,6 +54,7 @@ namespace BookingTravel.Application.DTOs.Booking
         public DateTime CreatedAt { get; set; }
         public DateTime DepartureDate { get; set; }
         public int NumberOfPassengers { get; set; }
+        public string? TourThumbnail { get; set; }
     }
 
     public class AdminBookingDto : MyBookingDto
@@ -62,10 +63,30 @@ namespace BookingTravel.Application.DTOs.Booking
         public string ContactPhone { get; set; } = string.Empty;
         public string ContactEmail { get; set; } = string.Empty;
         public int UserId { get; set; }
+        public List<PassengerDto> Passengers { get; set; } = new List<PassengerDto>();
     }
 
     public class UpdateBookingStatusRequest
     {
         public BookingStatus Status { get; set; }
+    }
+
+    public class TourParticipantDto
+    {
+        public int TourId { get; set; }
+        public string TourName { get; set; } = string.Empty;
+        public int DepartureScheduleId { get; set; }
+        public DateTime DepartureDate { get; set; }
+        public int TotalPassengers { get; set; }
+        public List<BookingParticipantDto> Bookings { get; set; } = new List<BookingParticipantDto>();
+    }
+
+    public class BookingParticipantDto
+    {
+        public int BookingId { get; set; }
+        public string ContactName { get; set; } = string.Empty;
+        public string ContactPhone { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public List<PassengerDto> Passengers { get; set; } = new List<PassengerDto>();
     }
 }

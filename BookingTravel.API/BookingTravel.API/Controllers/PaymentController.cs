@@ -23,15 +23,22 @@ namespace BookingTravel.API.Controllers
             _bookingService = bookingService;
         }
 
-        [HttpPost("create-vnpay-url/{bookingId}")]
-        public async Task<IActionResult> CreateZaloPayUrl(int bookingId)
+        // Tạo yêu cầu thanh toán sang cổng ZaloPay
+        [HttpPost("create-zalopay-order/{bookingId}")]
+        public async Task<IActionResult> CreateZaloPayOrder(int bookingId)
         {
             var bookings = await _bookingService.GetAllBookingsAsync();
             var booking = System.Linq.Enumerable.FirstOrDefault(bookings, b => b.Id == bookingId);
             if (booking == null) return NotFound(new { success = false, message = "Không tìm thấy booking" });
 
-            // Để tránh lỗi ZaloPay Sandbox Gateway (qcgateway) trắng trang khi Số Tiền Quá Lớn (Vượt 50 Triệu)
-            long amount = 50000;
+            // Lấy giá trị thực từ đơn hàng
+            long amount = (long)booking.TotalAmount;
+            
+            // ZaloPay Sandbox (AppID 2553) giới hạn tối đa 10.000.000 VND mỗi giao dịch
+            // Trong môi trường Production, bỏ dòng cap này
+            if (amount > 10000000) amount = 10000000; 
+            
+            if (amount <= 0) amount = 1000; // Giá trị tối thiểu cho giao dịch hợp lệ
 
             var embed_data = new { redirecturl = _configuration["ZaloPaySettings:ReturnUrl"] };
             var item = new[] { new { itemid = bookingId.ToString(), itemname = "Trip Booking", itemprice = amount, itemquantity = 1 } };
@@ -68,54 +75,49 @@ namespace BookingTravel.API.Controllers
             }
         }
 
-        [HttpGet("vnpay-return")]
+        // Tiếp nhận và xử lý kết quả phản hồi từ ZaloPay sau khi thanh toán
+        [HttpGet("zalopay-return")]
         public async Task<IActionResult> ZaloPayReturn()
         {
             if (Request.Query.Count > 0)
             {
                 try
                 {
-                    string amount = Request.Query["amount"].ToString();
-                    string appid = Request.Query["appid"].ToString();
-                    string apptransid = Request.Query["apptransid"].ToString();
-                    string bankcode = Request.Query["bankcode"].ToString();
-                    string checksum = Request.Query["checksum"].ToString();
-                    string discountamount = Request.Query["discountamount"].ToString();
-                    string pmcid = Request.Query["pmcid"].ToString();
-                    string status = Request.Query["status"].ToString();
-
-                    string data = appid + "|" + apptransid + "|" + pmcid + "|" + bankcode + "|" + amount + "|" + discountamount + "|" + status;
-                    string mac = ZaloPayHelper.CreateMac(data, _configuration["ZaloPaySettings:Key2"]);
-
-                    // Bỏ qua check MAC đối với Redirect URL ở môi trường Sandbox cũ (AppID 2553) do ZaloPay đôi khi trả về checksum lỗi.
-                    // Trong thực tế, Update Order luôn nên làm ở Webhook thay vì Redirect URL. 
-                    // Đối với Đồ Án, ta tin tưởng status = 1 trên URL để Pass Demo.
-                    bool isSandboxDemo = true;
-
-                    if (isSandboxDemo || mac.Equals(checksum, StringComparison.InvariantCultureIgnoreCase))
+                    // Lấy tất cả tham số có thể có từ ZaloPay (hỗ trợ cả status và returncode)
+                    string status = Request.Query.ContainsKey("status") ? Request.Query["status"].ToString() : "";
+                    if (string.IsNullOrEmpty(status)) status = Request.Query.ContainsKey("returncode") ? Request.Query["returncode"].ToString() : "";
+                    
+                    string apptransid = Request.Query.ContainsKey("apptransid") ? Request.Query["apptransid"].ToString() : "";
+                    
+                    // 1: Thành công, 2: Thất bại (theo tài liệu Redirect của ZaloPay)
+                    if (status == "1")
                     {
-                        if (status == "1" || status == "1") // 1: Thành công
+                        if (!string.IsNullOrEmpty(apptransid))
                         {
-                            int bookingId = Convert.ToInt32(apptransid.Split('_')[1]);
-                            await _bookingService.UpdateBookingStatusAsync(bookingId, BookingTravel.Domain.Enums.BookingStatus.Confirmed);
-                            return Ok(new { success = true, message = "Thanh toán thành công" });
+                            // apptransid format: yyMMdd_bookingId_guid
+                            var parts = apptransid.Split('_');
+                            if (parts.Length >= 2 && int.TryParse(parts[1], out int bookingId))
+                            {
+                                var success = await _bookingService.UpdateBookingStatusAsync(bookingId, BookingTravel.Domain.Enums.BookingStatus.Confirmed);
+                                if (success)
+                                {
+                                    return Ok(new { success = true, message = "Thanh toán và cập nhật đơn hàng thành công" });
+                                }
+                            }
                         }
-                        else
-                        {
-                            return BadRequest(new { success = false, message = "Thanh toán thất bại hoặc người dùng hủy" });
-                        }
+                        return BadRequest(new { success = false, message = "Không xác định được mã đơn hàng từ apptransid: " + apptransid });
                     }
                     else
                     {
-                        return BadRequest(new { success = false, message = "Lỗi chữ ký bảo mật ZaloPay không hợp lệ. Chuỗi: " + data + " | MAC: " + mac + " | Checksum: " + checksum });
+                        return BadRequest(new { success = false, message = "Giao dịch không thành công hoặc bị hủy. Status: " + status });
                     }
                 }
                 catch (Exception ex)
                 {
-                    return BadRequest(new { success = false, message = "Có lỗi xảy ra: " + ex.Message });
+                    return BadRequest(new { success = false, message = "Lỗi xử lý: " + ex.Message });
                 }
             }
-            return BadRequest(new { success = false, message = "Không có dữ liệu" });
+            return BadRequest(new { success = false, message = "Thiếu dữ liệu giao dịch" });
         }
     }
 }

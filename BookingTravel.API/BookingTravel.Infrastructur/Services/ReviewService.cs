@@ -19,6 +19,7 @@ namespace BookingTravel.Infrastructure.Services
             _context = context;
         }
 
+        // Lấy danh sách đánh giá của một Tour (Chỉ hiển thị các đánh giá đã duyệt)
         public async Task<IReadOnlyList<Review>> GetByTourIdAsync(int tourId)
         {
             // For customers: Only show Approved reviews
@@ -29,6 +30,7 @@ namespace BookingTravel.Infrastructure.Services
                 .ToListAsync();
         }
 
+        // Lấy toàn bộ danh sách đánh giá từ hệ thống (Dành cho Admin)
         public async Task<IReadOnlyList<Review>> GetAllReviewsForAdminAsync()
         {
             // For admin: Show all reviews with any statuses
@@ -39,6 +41,7 @@ namespace BookingTravel.Infrastructure.Services
                 .ToListAsync();
         }
 
+        // Lấy thông tin chi tiết một đánh giá theo ID
         public async Task<Review?> GetByIdAsync(int id)
         {
             return await _context.Reviews
@@ -46,7 +49,20 @@ namespace BookingTravel.Infrastructure.Services
                 .Include(r => r.Tour)
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
+        
+        // Lấy danh sách các đánh giá mới nhất đã được duyệt
+        public async Task<IReadOnlyList<Review>> GetLatestReviewsAsync(int count)
+        {
+            return await _context.Reviews
+                .Include(r => r.User)
+                .Include(r => r.Tour)
+                .Where(r => r.Status == ReviewStatus.Approved)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(count)
+                .ToListAsync();
+        }
 
+        // Tạo đánh giá mới cho một Tour sau khi khách hàng đã đi
         public async Task<Review> CreateReviewAsync(int userId, int tourId, int bookingId, int rating, string? title, string? content)
         {
             var review = new Review
@@ -66,6 +82,7 @@ namespace BookingTravel.Infrastructure.Services
             return review;
         }
 
+        // Cập nhật trạng thái đánh giá (Duyệt/Ẩn) và tính lại điểm Tour
         public async Task UpdateReviewStatusAsync(int id, ReviewStatus status)
         {
             var review = await _context.Reviews.FindAsync(id);
@@ -88,6 +105,7 @@ namespace BookingTravel.Infrastructure.Services
             }
         }
 
+        // Xóa một đánh giá và cập nhật lại điểm trung bình của Tour
         public async Task DeleteReviewAsync(int id)
         {
             var review = await _context.Reviews.FindAsync(id);
@@ -100,11 +118,13 @@ namespace BookingTravel.Infrastructure.Services
             }
         }
 
+        // Kiểm tra xem người dùng đã từng đánh giá tour này hay chưa
         public async Task<bool> HasUserReviewedTourAsync(int userId, int tourId)
         {
             return await _context.Reviews.AnyAsync(r => r.UserId == userId && r.TourId == tourId);
         }
 
+        // Tính toán lại điểm đánh giá trung bình của Tour dựa trên các review đã duyệt
         private async Task RecalculateTourRatingAsync(int tourId)
         {
             var tour = await _context.Tours.FindAsync(tourId);

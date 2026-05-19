@@ -19,6 +19,7 @@ namespace BookingTravel.API.Controllers
             _reviewService = reviewService;
         }
 
+        // Lấy danh sách đánh giá của một Tour cụ thể
         [HttpGet("tour/{tourId}")]
         public async Task<IActionResult> GetByTourId(int tourId)
         {
@@ -26,6 +27,15 @@ namespace BookingTravel.API.Controllers
             return Ok(new { success = true, data = reviews });
         }
 
+        // Lấy danh sách các đánh giá mới nhất trên hệ thống
+        [HttpGet("latest")]
+        public async Task<IActionResult> GetLatest([FromQuery] int count = 6)
+        {
+            var reviews = await _reviewService.GetLatestReviewsAsync(count);
+            return Ok(new { success = true, data = reviews });
+        }
+
+        // Quản lý toàn bộ đánh giá (Dành cho Admin/Staff)
         [HttpGet("admin/all")]
         [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> GetAllForAdmin()
@@ -34,6 +44,7 @@ namespace BookingTravel.API.Controllers
             return Ok(new { success = true, data = reviews });
         }
 
+        // Gửi đánh giá mới cho Tour (Yêu cầu đăng nhập)
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreateReview([FromBody] CreateReviewDto request)
@@ -54,6 +65,7 @@ namespace BookingTravel.API.Controllers
             return Ok(new { success = true, data = review, message = "Cảm ơn bạn đã đánh giá! Nhận xét của bạn đang chờ phê duyệt." });
         }
 
+        // Duyệt hoặc ẩn đánh giá (Dành cho Admin/Staff)
         [HttpPut("{id}/status")]
         [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateReviewStatusDto request)
@@ -69,6 +81,7 @@ namespace BookingTravel.API.Controllers
             }
         }
 
+        // Xóa vĩnh viễn một đánh giá (Yêu cầu quyền Admin)
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteReview(int id)

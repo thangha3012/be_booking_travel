@@ -19,9 +19,10 @@ namespace BookingTravel.Infrastructure.Services
             _context = context;
         }
 
+        // Khởi tạo đơn hàng mới, giữ chỗ và tính toán tổng tiền
         public async Task<BookingResponseDto> CreateBookingAsync(int userId, CreateBookingRequest request)
         {
-            // 1. Kiểm tra Lịch trình (Schedule) có tồn tại không
+            // Kiểm tra thông tin lịch trình
             var schedule = await _context.DepartureSchedules
                 .Include(s => s.Tour)
                 .Include(s => s.Pricings)
@@ -42,7 +43,7 @@ namespace BookingTravel.Infrastructure.Services
                 throw new Exception("Danh sách hành khách không được để trống.");
             }
 
-            // 2. Tính toán Giá tiền theo danh sách khách
+            // Tính tổng tiền dựa trên loại hành khách
             decimal totalAmount = 0;
             foreach (var pass in request.Passengers)
             {
@@ -59,7 +60,7 @@ namespace BookingTravel.Infrastructure.Services
                 }
             }
 
-            // 3. Kiểm tra ghế trống dựa trên số lượng khách
+            // Kiểm tra số lượng ghế trống
             int totalPassengers = request.Passengers.Count;
             if (schedule.AvailableSeats < totalPassengers)
             {
@@ -114,7 +115,7 @@ namespace BookingTravel.Infrastructure.Services
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Đây chính là điểm Tinh Túy của Optimistic Concurrency
+                // Xử lý xung đột khi nhiều người đặt cùng lúc (Optimistic Concurrency)
                 throw new Exception("Rất tiếc! Vừa có người khác nhanh tay đặt mất những chiếc vé cuối cùng của lịch trình này. Vui lòng tải lại trang và chọn lịch khác.");
             }
 
@@ -147,13 +148,15 @@ namespace BookingTravel.Infrastructure.Services
                     Status = b.Status,
                     CreatedAt = b.CreatedAt,
                     DepartureDate = b.DepartureSchedule.DepartureDate,
-                    NumberOfPassengers = b.Passengers.Count
+                    NumberOfPassengers = b.Passengers.Count,
+                    TourThumbnail = b.Tour.ImageUrl
                 })
                 .ToListAsync();
 
             return bookings;
         }
 
+        // Lấy chi tiết đơn hàng theo ID và UserID
         public async Task<AdminBookingDto> GetBookingByIdAsync(int bookingId, int userId)
         {
             var b = await _context.Bookings
@@ -177,7 +180,16 @@ namespace BookingTravel.Infrastructure.Services
                 NumberOfPassengers = b.Passengers.Count,
                 ContactName = b.ContactName,
                 ContactPhone = b.ContactPhone,
-                ContactEmail = b.ContactEmail
+                ContactEmail = b.ContactEmail,
+                TourThumbnail = b.Tour.ImageUrl,
+                Passengers = b.Passengers.Select(p => new PassengerDto
+                {
+                    FullName = p.FullName,
+                    Gender = p.Gender,
+                    DateOfBirth = p.DateOfBirth,
+                    IdDocument = p.IdDocument,
+                    Type = p.Type
+                }).ToList()
             };
         }
 
@@ -201,13 +213,23 @@ namespace BookingTravel.Infrastructure.Services
                     NumberOfPassengers = b.Passengers.Count,
                     ContactName = b.ContactName,
                     ContactPhone = b.ContactPhone,
-                    ContactEmail = b.ContactEmail
+                    ContactEmail = b.ContactEmail,
+                    TourThumbnail = b.Tour.ImageUrl,
+                    Passengers = b.Passengers.Select(p => new PassengerDto
+                    {
+                        FullName = p.FullName,
+                        Gender = p.Gender,
+                        DateOfBirth = p.DateOfBirth,
+                        IdDocument = p.IdDocument,
+                        Type = p.Type
+                    }).ToList()
                 })
                 .ToListAsync();
 
             return bookings;
         }
 
+        // Cập nhật trạng thái đơn hàng và xử lý hoàn/trừ số ghế trống tương ứng
         public async Task<bool> UpdateBookingStatusAsync(int bookingId, BookingStatus status)
         {
             var booking = await _context.Bookings
@@ -254,6 +276,7 @@ namespace BookingTravel.Infrastructure.Services
             return true;
         }
 
+        // Hủy đơn hàng từ phía khách hàng và hoàn trả lại số ghế trống
         public async Task<bool> CancelBookingAsync(int userId, int bookingId)
         {
             var booking = await _context.Bookings
@@ -263,10 +286,14 @@ namespace BookingTravel.Infrastructure.Services
 
             if (booking == null) return false;
 
-            // Chỉ cho phép khách hủy khi đơn hàng chưa được xác nhận hoặc đã hoàn thành
-            if (booking.Status != BookingStatus.Pending && booking.Status != BookingStatus.AwaitingPayment)
+            // Cho phép hủy nếu đơn chưa hoàn thành và chưa bị hủy
+            if (booking.Status == BookingStatus.Completed)
             {
-                throw new Exception("Không thể hủy đơn hàng ở trạng thái hiện tại. Vui lòng liên hệ hỗ trợ.");
+                throw new Exception("Chuyến đi đã hoàn thành, không thể hủy.");
+            }
+            if (booking.Status == BookingStatus.Cancelled)
+            {
+                throw new Exception("Đơn hàng này đã được hủy trước đó.");
             }
 
             // Hoàn trả ghế trống
@@ -284,6 +311,46 @@ namespace BookingTravel.Infrastructure.Services
 
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<System.Collections.Generic.IEnumerable<TourParticipantDto>> GetTourParticipantsAsync()
+        {
+            var data = await _context.DepartureSchedules
+                .Include(s => s.Tour)
+                .Include(s => s.Bookings)
+                    .ThenInclude(b => b.Passengers)
+                .Where(s => s.Bookings.Any(b => b.Status != BookingStatus.Cancelled))
+                .OrderBy(s => s.DepartureDate)
+                .Select(s => new TourParticipantDto
+                {
+                    TourId = s.TourId,
+                    TourName = s.Tour.Title,
+                    DepartureScheduleId = s.Id,
+                    DepartureDate = s.DepartureDate,
+                    TotalPassengers = s.Bookings
+                        .Where(b => b.Status != BookingStatus.Cancelled)
+                        .Sum(b => b.Passengers.Count),
+                    Bookings = s.Bookings
+                        .Where(b => b.Status != BookingStatus.Cancelled)
+                        .Select(b => new BookingParticipantDto
+                        {
+                            BookingId = b.Id,
+                            ContactName = b.ContactName,
+                            ContactPhone = b.ContactPhone,
+                            Status = b.Status.ToString(),
+                            Passengers = b.Passengers.Select(p => new PassengerDto
+                            {
+                                FullName = p.FullName,
+                                Gender = p.Gender,
+                                DateOfBirth = p.DateOfBirth,
+                                IdDocument = p.IdDocument,
+                                Type = p.Type
+                            }).ToList()
+                        }).ToList()
+                })
+                .ToListAsync();
+
+            return data;
         }
     }
 }

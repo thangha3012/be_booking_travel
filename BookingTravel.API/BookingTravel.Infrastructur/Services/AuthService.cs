@@ -27,6 +27,7 @@ namespace BookingTravel.Infrastructure.Services
             _emailService = emailService;
         }
 
+        // Xử lý yêu cầu quên mật khẩu: tạo OTP và gửi email xác nhận
         public async Task<bool> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -53,6 +54,7 @@ namespace BookingTravel.Infrastructure.Services
             return true;
         }
 
+        // Xác thực mã OTP người dùng nhập vào
         public async Task<bool> VerifyOtpAsync(VerifyOtpRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -65,6 +67,7 @@ namespace BookingTravel.Infrastructure.Services
             return true;
         }
 
+        // Đặt lại mật khẩu mới sau khi đã xác thực OTP thành công
         public async Task<bool> ResetPasswordAsync(ResetPasswordRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -83,6 +86,7 @@ namespace BookingTravel.Infrastructure.Services
             return true;
         }
 
+        // Đăng ký tài khoản người dùng mới
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
@@ -111,6 +115,7 @@ namespace BookingTravel.Infrastructure.Services
             return GenerateAuthResponse(newUser);
         }
 
+        // Đăng nhập hệ thống và trả về Token xác thực
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -128,6 +133,7 @@ namespace BookingTravel.Infrastructure.Services
             return GenerateAuthResponse(user);
         }
 
+        // Tạo chuỗi JWT Token chứa thông tin người dùng (Claims)
         private AuthResponse GenerateAuthResponse(User user)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");

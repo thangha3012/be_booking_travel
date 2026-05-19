@@ -65,6 +65,7 @@ namespace BookingTravel.Application.DTOs.Tours
         public decimal? BasePrice { get; set; }
         public string? DepartureLocation { get; set; }
         public string? Transport { get; set; }
+        public string? ImageUrl { get; set; }
     }
 
     public class UpdateTourRequest : CreateTourRequest

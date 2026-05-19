@@ -12,5 +12,6 @@ namespace BookingTravel.Application.Interfaces
         Task<IEnumerable<AdminBookingDto>> GetAllBookingsAsync();
         Task<bool> UpdateBookingStatusAsync(int bookingId, BookingTravel.Domain.Enums.BookingStatus status);
         Task<bool> CancelBookingAsync(int userId, int bookingId);
+        Task<IEnumerable<TourParticipantDto>> GetTourParticipantsAsync();
     }
 }

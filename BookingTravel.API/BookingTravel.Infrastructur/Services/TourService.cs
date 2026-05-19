@@ -25,6 +25,7 @@ namespace BookingTravel.Infrastructure.Services
             _unitOfWork = unitOfWork;
         }
 
+        // Lấy danh sách Tour có phân trang, lọc theo từ khóa, danh mục, điểm đến, giá tiền và trạng thái
         public async Task<PagedResult<TourDto>> GetAllToursAsync(
             string? keyword = null, 
             int? categoryId = null, 
@@ -64,15 +65,15 @@ namespace BookingTravel.Infrastructure.Services
                 query = query.Where(t => t.DestinationId == destinationId.Value);
             }
 
-            // Lọc theo khoảng giá tối thiểu từ lịch trình
+            // Lọc theo khoảng giá (Kiểm tra cả Giá gốc hoặc Giá trong lịch trình)
             if (minPrice.HasValue)
             {
-                query = query.Where(t => t.DepartureSchedules.Any(ds => ds.Pricings.Any(p => p.Price >= minPrice.Value)));
+                query = query.Where(t => t.BasePrice >= minPrice.Value);
             }
 
             if (maxPrice.HasValue)
             {
-                query = query.Where(t => t.DepartureSchedules.Any(ds => ds.Pricings.Any(p => p.Price <= maxPrice.Value)));
+                query = query.Where(t => t.BasePrice <= maxPrice.Value);
             }
 
             // Đếm tổng số lượng cho chức năng phân trang
@@ -117,6 +118,7 @@ namespace BookingTravel.Infrastructure.Services
             };
         }
 
+        // Lấy thông tin chi tiết một Tour bao gồm cả các lịch khởi hành và bảng giá
         public async Task<TourDto?> GetTourByIdAsync(int id)
         {
             var tour = await _context.Tours
@@ -131,6 +133,7 @@ namespace BookingTravel.Infrastructure.Services
             return MapToTourDto(tour);
         }
 
+        // Tạo mới một Tour du lịch (Mặc định ở trạng thái Nháp)
         public async Task<TourDto> CreateTourAsync(CreateTourRequest request)
         {
             var tour = new Tour
@@ -148,6 +151,7 @@ namespace BookingTravel.Infrastructure.Services
                 BasePrice = request.BasePrice,
                 DepartureLocation = request.DepartureLocation,
                 Transport = request.Transport,
+                ImageUrl = request.ImageUrl,
                 Status = TourStatus.Draft
             };
 
@@ -157,6 +161,7 @@ namespace BookingTravel.Infrastructure.Services
             return await GetTourByIdAsync(tour.Id) ?? throw new Exception("Vừa thêm xong nhưng không thấy trong DB?");
         }
 
+        // Cập nhật thông tin chi tiết của một Tour
         public async Task<bool> UpdateTourAsync(int id, UpdateTourRequest request)
         {
             var tour = await _context.Tours.FindAsync(id);
@@ -175,6 +180,7 @@ namespace BookingTravel.Infrastructure.Services
             tour.BasePrice = request.BasePrice;
             tour.DepartureLocation = request.DepartureLocation;
             tour.Transport = request.Transport;
+            tour.ImageUrl = request.ImageUrl;
             tour.Status = request.Status;
 
             _context.Tours.Update(tour);
@@ -183,6 +189,7 @@ namespace BookingTravel.Infrastructure.Services
             return true;
         }
 
+        // Xóa một Tour (Chỉ cho phép xóa khi chưa có lịch khởi hành)
         public async Task<bool> DeleteTourAsync(int id)
         {
             var tour = await _context.Tours.Include(t => t.DepartureSchedules).FirstOrDefaultAsync(t => t.Id == id);
@@ -199,6 +206,7 @@ namespace BookingTravel.Infrastructure.Services
             return true;
         }
 
+        // Thêm lịch khởi hành mới cho một Tour
         public async Task<DepartureScheduleDto> AddScheduleAsync(int tourId, AddScheduleRequest request)
         {
             var tour = await _context.Tours.FindAsync(tourId);
@@ -234,6 +242,7 @@ namespace BookingTravel.Infrastructure.Services
             };
         }
 
+        // Xóa một lịch khởi hành (Chỉ cho phép xóa khi chưa có khách đặt chỗ)
         public async Task<bool> RemoveScheduleAsync(int scheduleId)
         {
             var schedule = await _context.DepartureSchedules.Include(s => s.Bookings).FirstOrDefaultAsync(s => s.Id == scheduleId);
@@ -250,6 +259,7 @@ namespace BookingTravel.Infrastructure.Services
             return true;
         }
 
+        // Chuyển đổi từ Tour Entity sang TourDto
         private TourDto MapToTourDto(Tour tour)
         {
             var dto = new TourDto
@@ -272,7 +282,7 @@ namespace BookingTravel.Infrastructure.Services
                 Transport = tour.Transport,
                 Status = tour.Status,
                 Rating = tour.Rating,
-                ImageUrl = _context.MediaItems.FirstOrDefault(m => m.RefId == tour.Id && m.RefType == "Tour")?.Url
+                ImageUrl = tour.ImageUrl
             };
 
             if (tour.DepartureSchedules != null && tour.DepartureSchedules.Any())

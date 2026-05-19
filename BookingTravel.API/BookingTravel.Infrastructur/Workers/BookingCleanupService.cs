@@ -51,11 +51,13 @@ namespace BookingTravel.Infrastructure.Workers
             using var scope = _scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<BookingTravelDbContext>();
 
-            // Tìm tất cả các Booking đang cắm cờ Pending nhưng cái thời hạn UnlockTime đã qua 
+            // Tìm tất cả các Booking đang Pending hoặc AwaitingPayment nhưng thời hạn UnlockTime đã qua 
             var expiredBookings = await dbContext.Bookings
                 .Include(b => b.DepartureSchedule)
                 .Include(b => b.Passengers)
-                .Where(b => b.Status == BookingStatus.Pending && b.UnlockTime.HasValue && b.UnlockTime.Value <= DateTime.UtcNow)
+                .Where(b => (b.Status == BookingStatus.Pending || b.Status == BookingStatus.AwaitingPayment) 
+                         && b.UnlockTime.HasValue 
+                         && b.UnlockTime.Value <= DateTime.UtcNow)
                 .ToListAsync();
 
             if (!expiredBookings.Any()) return;
@@ -72,7 +74,7 @@ namespace BookingTravel.Infrastructure.Workers
                 booking.StatusHistories.Add(new BookingTravel.Domain.Entities.BookingStatusHistory
                 {
                     Status = BookingStatus.Cancelled,
-                    Note = "Hệ thống tự động hủy booking do khách không thanh toán quá 15 phút."
+                    Note = "Hệ thống tự động hủy do khách không thanh toán trong thời hạn cho phép."
                 });
 
                 _logger.LogInformation($"♻️ [Giải phóng] Đã hủy Booking #{booking.Id} và thối lại {booking.Passengers.Count} ghế cho Tour!");

@@ -17,7 +17,7 @@ namespace BookingTravel.API.Controllers
             _tourService = tourService;
         }
 
-        // Khách hàng vãng lai có thể xem danh sách Tour thoải mái
+        // Tìm kiếm và lấy danh sách Tour với các bộ lọc (Phân trang, Giá, Danh mục,...)
         [HttpGet]
         public async Task<IActionResult> GetAllTours(
             [FromQuery] string? keyword = null, 
@@ -34,7 +34,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(pagedResult, "Lấy danh sách Tour thành công.");
         }
 
-        // Khách lúc bấm vào Chi tiết 1 Tour
+        // Lấy thông tin chi tiết một Tour theo ID
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTourById(int id)
         {
@@ -43,8 +43,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(tour, "Lấy chi tiết Tour thành công.");
         }
 
-        // === CÁC API DƯỚI ĐÂY CHỈ ADMIN MỚI ĐƯỢC PHÉP ĐỤNG VÀO (Tạo, sửa, xóa, gắn lịch) ===
-
+        // Tạo mới Tour du lịch (Yêu cầu quyền Admin)
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateTour([FromBody] CreateTourRequest request)
@@ -53,6 +52,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(newTour, "Tạo hệ thống Tour nền tảng thành công.", 201);
         }
 
+        // Cập nhật thông tin Tour (Yêu cầu quyền Admin)
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateTour(int id, [FromBody] UpdateTourRequest request)
@@ -62,6 +62,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(null, "Cập nhật Tour thành công.");
         }
 
+        // Xóa Tour khỏi hệ thống (Yêu cầu quyền Admin)
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteTour(int id)
@@ -78,6 +79,7 @@ namespace BookingTravel.API.Controllers
             }
         }
 
+        // Thêm lịch khởi hành cho Tour (Yêu cầu quyền Admin)
         [HttpPost("{id}/schedules")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AddSchedule(int id, [FromBody] AddScheduleRequest request)
@@ -93,6 +95,7 @@ namespace BookingTravel.API.Controllers
             }
         }
 
+        // Gỡ bỏ lịch khởi hành của Tour (Yêu cầu quyền Admin)
         [HttpDelete("schedules/{scheduleId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RemoveSchedule(int scheduleId)

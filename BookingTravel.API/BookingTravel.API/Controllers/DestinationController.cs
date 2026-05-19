@@ -15,6 +15,7 @@ namespace BookingTravel.API.Controllers
             _destinationService = destinationService;
         }
 
+        // Lấy danh sách toàn bộ các điểm đến du lịch
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -22,6 +23,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(data, "Lấy danh sách điểm đến thành công.");
         }
 
+        // Lấy chi tiết thông tin một điểm đến theo ID
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -30,6 +32,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(result, "Lấy thông tin điểm đến thành công.");
         }
 
+        // Thêm một điểm đến mới vào hệ thống (Quyền Admin)
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] CreateDestinationRequest request)
@@ -38,6 +41,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(result, "Tạo điểm đến mới thành công.", 201); // 201 Created
         }
 
+        // Cập nhật thông tin điểm đến (Quyền Admin)
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateDestinationRequest request)
@@ -48,6 +52,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(null, "Cập nhật thành công.");
         }
 
+        // Xóa điểm đến khỏi hệ thống (Quyền Admin)
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)

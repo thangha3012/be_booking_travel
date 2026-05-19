@@ -24,6 +24,7 @@ namespace BookingTravel.Domain.Entities
         public string? DepartureLocation { get; set; }
         public string? Transport { get; set; }
         public TourStatus Status { get; set; } = TourStatus.Draft;
+        public string? ImageUrl { get; set; }
         public double Rating { get; set; } = 0;
 
         public ICollection<DepartureSchedule> DepartureSchedules { get; set; } = new List<DepartureSchedule>();

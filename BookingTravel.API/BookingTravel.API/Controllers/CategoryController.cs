@@ -17,7 +17,7 @@ namespace BookingTravel.API.Controllers
             _categoryService = categoryService;
         }
 
-        // Ai cũng có thể xem danh mục (Không cần phân quyền)
+        // Lấy danh sách toàn bộ danh mục tour
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -25,7 +25,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(categories, "Lấy danh sách danh mục thành công.");
         }
 
-        // CHỈ CÓ ADMIN mới được quyền tạo danh mục
+        // Tạo mới một danh mục (Yêu cầu quyền Admin)
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request)
@@ -41,6 +41,7 @@ namespace BookingTravel.API.Controllers
             }
         }
 
+        // Cập nhật thông tin danh mục (Yêu cầu quyền Admin)
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryRequest request)
@@ -50,6 +51,7 @@ namespace BookingTravel.API.Controllers
             return SuccessResult(true, "Cập nhật danh mục thành công.");
         }
 
+        // Xóa danh mục khỏi hệ thống (Yêu cầu quyền Admin)
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)

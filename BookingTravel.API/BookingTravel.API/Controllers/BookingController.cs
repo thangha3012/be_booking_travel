@@ -17,6 +17,7 @@ namespace BookingTravel.API.Controllers
             _bookingService = bookingService;
         }
 
+        // Tạo mới một đơn đặt Tour (Giữ chỗ chờ thanh toán)
         [HttpPost("create")]
         [Authorize] // Bắt buộc user phải đăng nhập (Bất kể Customer hay Admin)
         public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
@@ -40,6 +41,7 @@ namespace BookingTravel.API.Controllers
             }
         }
 
+        // Lấy danh sách Tour đã đặt của người dùng hiện tại
         [HttpGet("my")]
         [Authorize]
         public async Task<IActionResult> GetMyBookings()
@@ -61,6 +63,7 @@ namespace BookingTravel.API.Controllers
             }
         }
 
+        // Lấy chi tiết một đơn đặt Tour theo ID (Yêu cầu chính chủ hoặc Admin)
         [HttpGet("{id}")]
         [Authorize]
         public async Task<IActionResult> GetBookingById(int id)
@@ -84,6 +87,7 @@ namespace BookingTravel.API.Controllers
             }
         }
 
+        // Lấy danh sách toàn bộ đơn đặt Tour trong hệ thống (Quyền Admin)
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllBookings()
@@ -98,6 +102,7 @@ namespace BookingTravel.API.Controllers
                 return ErrorResult(ex.Message, 400);
             }
         }
+        // Cập nhật trạng thái đơn hàng (Quyền Admin)
         [HttpPut("{id}/status")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateBookingStatus(int id, [FromBody] UpdateBookingStatusRequest request)
@@ -114,6 +119,7 @@ namespace BookingTravel.API.Controllers
             }
         }
 
+        // Khách hàng tự yêu cầu hủy đơn đặt Tour
         [HttpPut("{id}/cancel")]
         [Authorize]
         public async Task<IActionResult> CancelBooking(int id)
@@ -130,6 +136,22 @@ namespace BookingTravel.API.Controllers
                 if (!success) return ErrorResult("Không tìm thấy đơn hàng của bạn.", 404);
 
                 return SuccessResult(null, "Đã hủy đơn hàng thành công.");
+            }
+            catch (Exception ex)
+            {
+                return ErrorResult(ex.Message, 400);
+            }
+        }
+
+        // Lấy danh sách khách đi tour theo từng lịch trình (Quyền Admin)
+        [HttpGet("participants")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetTourParticipants()
+        {
+            try
+            {
+                var data = await _bookingService.GetTourParticipantsAsync();
+                return SuccessResult(data, "Lấy danh sách khách đi tour thành công.");
             }
             catch (Exception ex)
             {

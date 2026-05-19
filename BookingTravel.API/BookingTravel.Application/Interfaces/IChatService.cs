@@ -4,6 +4,6 @@ namespace BookingTravel.Application.Interfaces
 {
     public interface IChatService
     {
-        Task<string> GetChatResponseAsync(string userMessage);
+        Task<string> GetChatResponseAsync(string userMessage, int? userId = null);
     }
 }

@@ -72,6 +72,9 @@ builder.Services.AddScoped<BookingTravel.Application.Interfaces.IUserService, Bo
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.IReviewService, BookingTravel.Infrastructure.Services.ReviewService>();
 builder.Services.AddScoped<BookingTravel.Application.Interfaces.IChatService, BookingTravel.Infrastructure.Services.ChatService>();
 builder.Services.AddHttpClient();
+
+// Đăng ký Background Worker: Tự động hủy đơn hàng quá hạn thanh toán
+builder.Services.AddHostedService<BookingTravel.Infrastructure.Workers.BookingCleanupService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -112,6 +115,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontend");
+app.UseStaticFiles(); // Cho phép truy cập file tĩnh trong wwwroot
 
 app.UseHttpsRedirection();
 
